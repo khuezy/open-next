@@ -87,7 +87,7 @@ export async function lambdaHandler(
 }
 //#endOverride
 
-async function processRequest(
+export async function processRequest(
   req: IncomingMessage,
   res: ServerResponse,
   internalEvent: InternalEvent,

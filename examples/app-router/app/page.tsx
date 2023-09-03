@@ -26,7 +26,8 @@ export default function Home() {
           new timestamp
         </Nav>
         <Nav href={"/ssr"} title="SSR">
-          Server Side Render should generate a new timestamp on each load
+          Server Side Render should generate a new timestamp on each load.
+          Streaming support for loading...
         </Nav>
         <Nav href={"/api"} title="API">
           Calls an API endpoint defined in app/api/hello/route and middleware

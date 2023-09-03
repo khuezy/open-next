@@ -76,14 +76,14 @@ export class StreamingServerResponse extends http.ServerResponse {
       this.internalWrite(chunk);
     }
 
-    if (!this._hasWritten) {
+    if (!this._hasWritten && chunk) {
       // We need to send data here, otherwise the stream will not end at all
       this.internalWrite(new Uint8Array(8));
     }
 
-    setImmediate(() => {
+    process.nextTick(() => {
       this.responseStream.end(() => {
-        debug("stream end", chunk);
+        console.log("stream end", chunk);
       });
     });
     debug("stream end", chunk);
@@ -91,7 +91,7 @@ export class StreamingServerResponse extends http.ServerResponse {
   }
 
   private internalWrite(chunk: any) {
-    setImmediate(() => {
+    process.nextTick(() => {
       this.responseStream.write(chunk);
       this._hasWritten = true;
     });

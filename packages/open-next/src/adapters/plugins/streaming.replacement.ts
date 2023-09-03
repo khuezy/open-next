@@ -9,6 +9,7 @@ import { convertFrom } from "../event-mapper";
 import { debug } from "../logger";
 import type { ResponseStream } from "../types/aws-lambda";
 import type { WarmerEvent } from "../warmer-function";
+import { processRequest } from "./lambdaHandler";
 //#override imports
 import { StreamingServerResponse } from "../http/responseStreaming";
 import { processInternalEvent } from "./routing/default.js";
@@ -70,7 +71,7 @@ export const lambdaHandler = awslambda.streamifyResponse(async function (
     //   console.log("preprocessResult.headers", headers);
     //   res.writeHead(preprocessResult.statusCode, headers);
     // });
-    setImmediate(() => {
+    process.nextTick(() => {
       res.writeHead(preprocessResult.statusCode, headers);
       res.write(preprocessResult.body);
       res.end();
@@ -84,7 +85,7 @@ export const lambdaHandler = awslambda.streamifyResponse(async function (
       internalEvent: overwrittenInternalEvent,
     } = preprocessResult;
 
-    //@ts-expect-error - processRequest is already defined in serverHandler.ts
+    //@ts-expecxt-error - processRequest is already defined in serverHandler.ts
     await processRequest(req, res, overwrittenInternalEvent, isExternalRewrite);
 
     await revalidateIfRequired(

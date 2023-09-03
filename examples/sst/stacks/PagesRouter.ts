@@ -1,4 +1,4 @@
-import { NextjsSite } from "sst/constructs";
+import { NextjsSite } from "./NextjsSite";
 
 export function PagesRouter({ stack }) {
   const site = new NextjsSite(stack, "pagesrouter", {
