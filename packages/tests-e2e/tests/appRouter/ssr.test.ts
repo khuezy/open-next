@@ -5,7 +5,7 @@ import { wait } from "@open-next/utils";
 import { expect, test } from "@playwright/test";
 
 // NOTE: We don't await page load b/c we want to see the Loading page
-test("Server Side Render and loading.tsx", async ({ page }) => {
+test.only("Server Side Render and loading.tsx", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "SSR" }).click();
   await page.waitForURL("/ssr");

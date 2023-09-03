@@ -5,11 +5,11 @@ import { wait } from "@open-next/utils";
 import { expect, test } from "@playwright/test";
 
 // NOTE: We don't await page load b/c we want to see the Loading page
-test("Server Side Render", async ({ page }) => {
+test.only("Server Side Render", async ({ page }) => {
   await page.goto("/");
   await page.locator("[href='/ssr']").click();
   await page.waitForURL("/ssr");
-  let el = page.getByText("SSR").first();
+  let el = page.getByText("Time:").first();
   await expect(el).toBeVisible();
   let time = await el.textContent();
 

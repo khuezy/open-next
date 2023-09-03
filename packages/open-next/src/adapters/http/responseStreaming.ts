@@ -18,8 +18,17 @@ export class StreamingServerResponse extends http.ServerResponse {
   }
 
   setHeader(name: string, value: string | number | readonly string[]): this {
-    // @ts-ignore
-    this[HEADERS][name.toLowerCase()] = value;
+    // FIXME: content type is coming back as an array, need to investigate the root
+    // problem, but this should do for now
+    name = name.toLowerCase();
+    if (name === "content-type") {
+      // @ts-ignore
+      this[HEADERS][name] = Array.isArray(value) ? value[0] : value;
+    } else {
+      // @ts-ignore
+      this[HEADERS][name] = value;
+    }
+
     return this;
   }
 
@@ -51,6 +60,7 @@ export class StreamingServerResponse extends http.ServerResponse {
       this.responseStream.setContentType(
         "application/vnd.awslambda.http-integration-response",
       );
+
       const prelude = JSON.stringify({
         statusCode: statusCode as number,
         headers: this[HEADERS],
