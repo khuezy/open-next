@@ -21,13 +21,25 @@ export function middleware(request: NextRequest) {
   }
 
   const requestHeaders = new Headers();
+  // Setting the Request Headers, this should be available in RSC
   requestHeaders.set("request-header", "request-header");
   requestHeaders.set(
     "search-params",
     `mw/${request.nextUrl.searchParams.get("searchParams") || ""}`,
   );
   const responseHeaders = new Headers();
+  // Response headers should show up in the client's response headers
   responseHeaders.set("response-header", "response-header");
+
+  // Set the cache control header with custom swr
+  // For: isr.test.ts
+  if (path === "/isr") {
+    responseHeaders.set(
+      "cache-control",
+      "max-age=10, stale-while-revalidate=999",
+    );
+  }
+
   const r = NextResponse.next({
     headers: responseHeaders,
     request: {
