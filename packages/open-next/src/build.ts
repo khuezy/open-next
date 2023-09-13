@@ -321,27 +321,18 @@ function createImageOptimizationBundle() {
   // For SHARP_IGNORE_GLOBAL_LIBVIPS see: https://github.com/lovell/sharp/blob/main/docs/install.md#aws-lambda
 
   //check if we are running in Windows environment then set env variables accordingly.
-  if (process.platform === "win32") {
-    cp.execSync(
-      `set SHARP_IGNORE_GLOBAL_LIBVIPS=1 && npm install --arch=arm64 --platform=linux --target=18 --libc=glibc --prefix=${path.resolve(
-        outputPath,
-      )} sharp@0.32.5`,
-      {
-        stdio: "inherit",
-        cwd: appPath,
+  cp.execSync(
+    `npm install --arch=arm64 --platform=linux --target=18 --libc=glibc --prefix=${path.resolve(
+      outputPath,
+    )} sharp@0.32.5`,
+    {
+      env: {
+        SHARP_IGNORE_GLOBAL_LIBVIPS: "1",
       },
-    );
-  } else {
-    cp.execSync(
-      `SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --arch=arm64 --platform=linux --target=18 --libc=glibc --prefix=${path.resolve(
-        outputPath,
-      )} sharp@0.32.5`,
-      {
-        stdio: "inherit",
-        cwd: appPath,
-      },
-    );
-  }
+      stdio: "inherit",
+      cwd: appPath,
+    },
+  );
 }
 
 function createStaticAssets() {
@@ -453,19 +444,19 @@ async function createServerBundle(monorepoRoot: string) {
   const plugins =
     compareSemver(options.nextVersion, "13.4.13") >= 0
       ? [
-          openNextPlugin({
-            target: /plugins\/serverHandler\.js/g,
-            replacements: ["./serverHandler.replacement.js"],
-          }),
-          openNextPlugin({
-            target: /plugins\/util\.js/g,
-            replacements: ["./util.replacement.js"],
-          }),
-          openNextPlugin({
-            target: /plugins\/routing\/default\.js/g,
-            replacements: ["./default.replacement.js"],
-          }),
-        ]
+        openNextPlugin({
+          target: /plugins\/serverHandler\.js/g,
+          replacements: ["./serverHandler.replacement.js"],
+        }),
+        openNextPlugin({
+          target: /plugins\/util\.js/g,
+          replacements: ["./util.replacement.js"],
+        }),
+        openNextPlugin({
+          target: /plugins\/routing\/default\.js/g,
+          replacements: ["./default.replacement.js"],
+        }),
+      ]
       : undefined;
 
   if (plugins) {
@@ -640,8 +631,7 @@ function esbuildSync(esbuildOptions: ESBuildOptions) {
   if (result.errors.length > 0) {
     result.errors.forEach((error) => console.error(error));
     throw new Error(
-      `There was a problem bundling ${
-        (esbuildOptions.entryPoints as string[])[0]
+      `There was a problem bundling ${(esbuildOptions.entryPoints as string[])[0]
       }.`,
     );
   }
@@ -670,8 +660,7 @@ async function esbuildAsync(esbuildOptions: ESBuildOptions) {
   if (result.errors.length > 0) {
     result.errors.forEach((error) => console.error(error));
     throw new Error(
-      `There was a problem bundling ${
-        (esbuildOptions.entryPoints as string[])[0]
+      `There was a problem bundling ${(esbuildOptions.entryPoints as string[])[0]
       }.`,
     );
   }
