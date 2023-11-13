@@ -1,6 +1,9 @@
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import crypto from "crypto";
 import { ServerResponse } from "http";
+import { PassThrough, Transform } from "stream";
+import through2 from "through2";
+import * as zlib from "zlib";
 
 import { BuildId, HtmlPages } from "../../config/index.js";
 import { IncomingMessage } from "../../http/request.js";
@@ -12,6 +15,8 @@ declare global {
   var openNextVersion: string;
   var lastModified: number;
 }
+
+type Encoding = "br" | "gzip" | "deflate";
 
 enum CommonHeaders {
   CACHE_CONTROL = "cache-control",
@@ -40,17 +45,43 @@ export async function proxyRequest(
 
   await new Promise<void>((resolve, reject) => {
     proxy.on("proxyRes", (proxyRes: ServerResponse) => {
-      const body: Uint8Array[] = [];
-      proxyRes.on("data", function (chunk) {
-        body.push(chunk);
+      debug(`Proxying response`, {
+        // @ts-ignore
+        headers: proxyRes.getHeaders?.() || proxyRes.headers,
       });
-      proxyRes.on("end", function () {
-        const newBody = Buffer.concat(body).toString();
-        debug(`Proxying response`, {
-          headers: proxyRes.getHeaders(),
-          body: newBody,
-        });
-        res.end(newBody);
+
+      // @ts-ignore
+      res.setHeader("Content-Type", proxyRes.headers["content-type"]);
+      // @ts-ignore
+      const encoding = proxyRes.headers["content-encoding"] as Encoding;
+      let t: Transform;
+      // Check if the response is Brotli-encoded
+      switch (encoding) {
+        case "br":
+          t = zlib.createBrotliDecompress();
+          break;
+        case "deflate":
+          t = zlib.createGunzip();
+          break;
+        case "gzip":
+          t = zlib.createInflate();
+          break;
+        default:
+          t = new PassThrough();
+      }
+
+      // Create a transform stream to modify relative URLs to absolute URLs
+      const modifyUrlsStream = through2((chunk, enc, callback) => {
+        // Modify the chunk (content) here
+        const modifiedChunk = modifyRelativeUrls(
+          chunk.toString("utf-8"),
+          req.url!,
+        );
+        callback(null, Buffer.from(modifiedChunk));
+      });
+      proxyRes.pipe(t).pipe(modifyUrlsStream).pipe(res, { end: true });
+
+      proxyRes.on("end", () => {
         resolve();
       });
     });
@@ -64,8 +95,30 @@ export async function proxyRequest(
     proxy.web(req, res, {
       target: req.url,
       headers: req.headers,
+      selfHandleResponse: true,
     });
   });
+}
+
+function modifyRelativeUrls(content: string, host: string) {
+  // Replace relative URLs with absolute URLs
+  let modifiedContent = content.replace(
+    /(href|src)=["']\/([a-zA-Z0-9\-_\/\.%]*)["']/g,
+    (match, attribute, path) => {
+      // Assuming react.dev is the absolute base URL
+      return `${attribute}="${host}${path}"`;
+    },
+  );
+
+  modifiedContent = modifiedContent.replace(
+    /background-image:\s*url\(["']?\/([a-zA-Z0-9\-_\/\.%]+)["']?\)/g,
+    (match, path) => {
+      return `background-image:url(${host}${path});`;
+    },
+  );
+
+  console.log("~~content: ", { content, modifiedContent });
+  return modifiedContent;
 }
 
 export function fixCacheHeaderForHtmlPages(
