@@ -41,6 +41,10 @@ export async function proxyRequest(
     changeOrigin: true,
     ignorePath: true,
     xfwd: true,
+    followRedirects: true,
+    target: req.url,
+    headers: req.headers,
+    selfHandleResponse: true,
   });
 
   await new Promise<void>((resolve, reject) => {
@@ -92,11 +96,7 @@ export async function proxyRequest(
 
     debug(`Proxying`, { url: req.url, headers: req.headers });
 
-    proxy.web(req, res, {
-      target: req.url,
-      headers: req.headers,
-      selfHandleResponse: true,
-    });
+    proxy.web(req, res);
   });
 }
 
